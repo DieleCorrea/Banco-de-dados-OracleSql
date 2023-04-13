@@ -1,0 +1,24 @@
+-- programa com cursor que busca uma cidade de código 4 que não existe.
+-- os campos v_nome, v_salario estão apenas como exemplo, não são necessários.
+
+create table cidade (cod_cidade number(10), nome_cidade varchar2(100), uf varchar2(2), pais varchar2(100));
+insert into cidade values (1, 'Campo Bom', 'RS', 'Brasil');
+insert into cidade values (2, 'Novo Hamburgo', 'RS', 'Brasil');
+insert into cidade values (3, 'Sapiranga', 'RS', 'Brasil');
+select * from cidade;
+
+declare
+  v_nome varchar2(100);
+  v_salario number(12,2):=0;
+  cursor c_cidade is
+    select cod_cidade, nome_cidade, uf, pais from cidade where cod_cidade =4;
+  r_cidade c_cidade%rowtype;
+begin
+  open c_cidade;
+  fetch c_cidade into r_cidade;
+  dbms_output.put_line(r_cidade.nome_cidade);
+  if c_cidade%notfound then
+    dbms_output.put_line('não encontrou a cidade');
+  end if;
+  close c_cidade;
+end;
