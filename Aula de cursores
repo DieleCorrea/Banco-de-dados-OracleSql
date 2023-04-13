@@ -1,0 +1,32 @@
+
+create table cliente 
+              (id_cliente number(7), 
+              nome_cliente varchar2(100), 
+              vlr_renda number (12,2),
+  constraint cliente_pk primary key (id_cliente));
+insert into cliente (id_cliente,nome_cliente,vlr_renda) values (1, 'Diele', 2000 );
+insert into cliente (id_cliente,nome_cliente,vlr_renda) values (2, 'pamela', 1518);
+insert into cliente (id_cliente,nome_cliente,vlr_renda) values (3, 'ingridi', 2600);
+select * from cliente ;
+declare
+   nome_cliente varchar2(100);
+   vlr_renda number (12,2);
+cursor c_cli_max is
+    select nome_cliente 
+    from cliente 
+    where vlr_renda in 
+      (Select max (vlr_renda)
+      from cliente);
+      r_cli_max c_cli_max%rowtype;
+
+begin
+  open c_cli_max;
+  fetch c_cli_max into r_cli_max;
+  dbms_output.put_line(r_cli_max.nome_cliente);
+
+if c_cli_max%notfound 
+    then dbms_output.put_line('nÃO ENCONTROU NENHUM VALOR DE RENDA');
+  end if;
+    dbms_output.put_line('O CLIENTE COM MAIOR RENDA É:'||r_cli_max.nome_cliente);
+close c_cli_max;
+end;
