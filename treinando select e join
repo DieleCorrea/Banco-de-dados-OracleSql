@@ -1,0 +1,71 @@
+create table cliente (cod_cli number(10), nome varchar2(100) , vlr_renda number (12,2),
+    constraint cli_pk primary key (cod_cli));
+
+insert into cliente (cod_cli, nome, vlr_renda) values (1, 'Joana', 200);
+insert into cliente (cod_cli, nome, vlr_renda) values (2, 'Pedro', 300);
+insert into cliente (cod_cli, nome, vlr_renda) values (3, 'Josefa', 400);
+insert into cliente (cod_cli, nome, vlr_renda) values (4, 'Marga', 500);
+insert into cliente (cod_cli, nome, vlr_renda) values (5, 'Otília', 100);
+insert into cliente (cod_cli, nome, vlr_renda) values (6, 'Genoveva', 20);
+------------------------------------------------------
+create table montadora
+(cod_montadora number(5), nome_montadora varchar2(100), 
+    constraint montadora_pk primary key (cod_montadora));
+
+insert into montadora values (1, 'VW');
+insert into montadora values (2, 'Fiat');
+insert into montadora values (3, 'GM');
+insert into montadora values (4, 'Toyota');
+insert into montadora values (5, 'Honda');
+insert into montadora values (6, 'Rnault');
+---------------------------------------------------
+create table carro (cod_carro number(5), nome_carro varchar2(100), num_portas number(2), cod_montadora number(5),
+    constraint carro_pk primary key (cod_carro), 
+    constraint carro_montadora_fk foreign key (cod_montadora) references montadora(cod_montadora) );
+
+insert into carro values (1, 'Fuca',5, 1);
+insert into carro values (2, 'Kombi',5, 1);
+insert into carro values (3, 'Idea',5, 2);
+insert into carro values (4, 'Uno',5, 2);
+insert into carro values (5, 'Yaris',5, 4);
+insert into carro values (6, 'Corolla',5, 4);
+insert into carro values (7, 'Civic',5, 5);
+---------------------------------------------------
+create table cliente_carro (cod_cli number(10), cod_carro number(5), valor number(12,2),
+    constraint cliente_carro_pk primary key (cod_carro, cod_cli),
+    constraint cli_carro_fk foreign key (cod_carro) references carro(cod_carro),
+    constraint cli_carro2_fk foreign key (cod_cli) references cliente(cod_cli));
+
+---------------------------------------------------
+--CRIEI UMA VIEW 
+create or replace View v_teste as
+select cliente.nome, montadora.nome_montadora, carro.nome_carro
+from cliente, montadora, carro
+where cliente.cod_cli = montadora.cod_montadora
+    and montadora.cod_montadora = carro.cod_carro;
+
+--VER AS TABELAS
+select * from v_teste;
+select * from cliente;
+select * from cliente_carro;
+---------------------------------------------------
+create or replace View v_join as 
+select a.nome, b.nome_montadora
+from cliente a
+inner join  montadora b
+on (a.cod_cli = b.cod_montadora);
+
+select * from v_join;
+
+create or replace View v_join2 as 
+select a.nome, a.cod_cli, b.nome_montadora
+from cliente a
+left outer join  montadora b
+on (a.cod_cli = b.cod_montadora);
+
+select * from v_join2;
+
+
+
+
+
