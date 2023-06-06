@@ -1,0 +1,190 @@
+
+---------TABELA CARGO
+CREATE TABLE CARGO 
+	(IdCargo INTEGER NOT NULL PRIMARY KEY,
+  	NomeCargo VARCHAR(50),
+  	PercAumento NUMBER(5,2));
+
+INSERT INTO CARGO VALUES (1, 'GERENTE DE PROJETO', 15.75);
+INSERT INTO CARGO VALUES (2, 'ANALISTA DE SISTEMAS', 10.00);
+---------TABELA FUNCIONARO
+CREATE TABLE FUNCIONARIO
+   (IDFUNCIONARIO NUMBER PRIMARY KEY NOT NULL,
+    NOMEFUNCIONARIO VARCHAR2(100),
+    SALARIO NUMBER(17,2), FLGGERENTE CHAR(1),
+    IDCARGO NUMBER,
+         FOREIGN KEY (IDCARGO) REFERENCES CARGO (IDCARGO));
+
+INSERT INTO FUNCIONARIO VALUES (1,'JOSÉ DAS COUVES',1500,'S', 1);
+INSERT INTO FUNCIONARIO VALUES (2,'ANTONIO FLORENÇO',3725.50,'N', 2);
+INSERT INTO FUNCIONARIO VALUES (3,'JUSTINA FEIJÓ',2725.50,'N', 2);
+INSERT INTO FUNCIONARIO VALUES (4,'MARIA ORACLINA',8500,'N', 2);
+INSERT INTO FUNCIONARIO VALUES (5,'DIELE',8900,'N', 2);
+
+select * from cargo;
+
+---------TABELA log_informacao
+create table log_informacao (cod_info number(5), descricao varchar2(100));
+select * from log_informacao;
+
+--*********************************************************
+--EXERCICIOS
+
+--Utilizados as tabelas cargo e funcionário (última aula-classe) faça uma procedure que busque o  
+--nome do funcionário e o seu cargo e insira os dados na tabela log_informação. Use como parâmetro o 
+--código do funcionário. Use cursor.
+
+create or replace procedure prc_exercicio1 (p_codigofunc in number)
+    is 
+    cursor c_nome is
+    	select 	funcionario.nomefuncionario, cargo.NomeCargo 
+        from cargo, funcionario
+    	where funcionario.IdCargo =cargo.IdCargo
+        and funcionario.idfuncionario = p_codigofunc;--peguei o nome e o cargo e joguei no parametro 
+	r_nome c_nome%rowtype;
+
+begin
+    open c_nome; 
+	fetch c_nome into r_nome;
+		if c_nome%notfound then
+            raise_application_error(-20200,'erro');
+        end if;
+		if c_nome%found then
+            insert into log_informacao 
+            values (1, r_nome.nomefuncionario|| r_nome.NomeCargo);
+        end if;
+
+	close c_nome;
+end;
+exec prc_exercicio1(3);
+        --o parametro que eu criei estou passando nesse parentes 
+        --onde eu tinha jogado o nome e o cargo nesse parametro no selet 
+
+select * from log_informacao;
+-------------------------------------------------
+--Faça uma FUNÇÃO com cursor que retorne o nome do 
+--funcionário e o seu cargo.O parâmetro informado é o código do funcionário
+create or replace function fnc_exercio2 (p_cod_func in number)
+return varchar2 is
+    v_retorno varchar2(100);
+
+	cursor c_x is 
+		select funcionario.nomefuncionario||' '||cargo.nomecargo --como tenho so uma variavel é necessário colocar o ||' '|| pois assim CONCATENO AS INFORMAÇOES 
+		from funcionario, cargo
+		where funcionario.idcargo = cargo.idcargo
+		and funcionario.idfuncionario = p_cod_func;
+begin
+    open c_x;
+	fetch c_x into v_retorno;
+    	if c_x%notfound then
+           return ('não encontrou funcionario');
+        end if;
+    	if c_x%found then
+            return(v_retorno);
+        end if;	
+	close c_x;
+	
+end;
+
+select fnc_exercio2(2) from dual;
+
+select fnc_exercio2(idfuncionario) from funcionario;
+
+--------------------------------------------------
+--3-Crie uma trigger na tabela funcional. 
+--Toda vez que houver uma inserção na tabela funcionário, a trigger deve inserir na tabela log informação o nome do 
+--funcionário e o seu cargo. CUIDADO PARA NÃO CAUSAR UMA TRIGGER MUTANTE. 
+
+--EXEMPLO DE TRIGGER MUTANTE
+create or replace trigger trge_exerc3
+before insert on funcionario 
+for each row
+declare 
+    cursor c_x is 
+    	select funcionario.nomefuncionario, cargo.NomeCargo --ERRO MUTANTE EM TRIGGER, NÃO POSSO CHAMAR A TABELA QUE DISPAREI
+        from cargo, funcionario
+    	where funcionario.IdCargo =cargo.IdCargo
+	r_x c_x%rowtype;
+begin
+    open c_x;
+	fetch c_x into r_x;
+	close c_c;
+    if inserting then 
+    insert into log_informacao (1,:new.nomefuncionario|| r_nome.NomeCargo)
+    end if;
+end;
+--CORREÇÃO DO EXERCICIO CORRETA:
+
+create or replace trigger trg_exerc3
+before insert on funcionario 
+for each row
+    
+begin
+    
+    declare 
+        cursor c_c is --ESSE CURSOR EU CRIEI PARA PODER CHAMAR AS INFORMAÇÕES DA TABELA CARGO POIS ESTOU DISPARANDO A TRIGGER PARA FUNCIONARIO
+        	select nomeCargo 
+            from cargo
+        	where IdCargo = :new.IdCargo;
+    	r_c c_c%rowtype;
+    
+    begin
+        open c_c;
+    	fetch c_c into r_c;
+    	close c_c;
+    
+        insert into log_informacao values (1,:new.nomefuncionario||' '|| r_c.NomeCargo);        
+    end;
+
+end;
+select * from log_informacao;
+
+---------------------------------------------
+--4- Crie uma função que retorna o nome do cargo e quantos funcionários estão 
+--cadastrados naquele cargo. Passe como parâmetro o código do cargo. Use cursor.
+
+create or replace function fnc_4(p_cod_cargo in number)
+return varchar is
+
+	cursor c_x is 
+    	select nomecargo, count(1) contador 
+		from cargo, funcionario
+		where cargo.idcargo = funcionario.idfuncionario
+		and cargo.idcargo = p_cod_cargo
+		group by nomecargo;
+	r_x c_x%rowtype;
+begin
+    open c_x;
+    fetch c_x into r_x;
+    close c_x; 
+
+	return(r_x.nomecargo||' '||r_x.contador);
+end;
+
+select fnc_4(2) from dual;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
