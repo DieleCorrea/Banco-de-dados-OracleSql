@@ -1,0 +1,166 @@
+
+create table cidade
+(cod_cidade number(7),
+ nome_cidade varchar2(100),
+ uf  varchar2(2),
+ pais varchar2(100),
+ constraint cidade_pk primary key (cod_cidade));
+
+insert into cidade(cod_cidade, nome_cidade ,uf,pais) values (1,'São Leopodo', 'rs','brasil');
+insert into cidade(cod_cidade, nome_cidade ,uf,pais) values (2,'Sl', 'rs','brasil');
+insert into cidade(cod_cidade, nome_cidade ,uf,pais) values (3,'Novo Hamburgo', 'rs','brasil');
+insert into cidade(cod_cidade, nome_cidade ,uf,pais) values (4,'Nh', 'rs','brasil');
+
+---------------------------------------
+ create table pessoa
+(cod_pessoa number(7),
+ nome_pessoa varchar2(100),
+ cpf varchar2(14),
+ endereco varchar2(100),
+ cod_cidade number(7),
+ dt_nasc date,
+ fone varchar2(30),
+ email varchar2(80),
+ constraint pessoa_pk primary key (cod_pessoa),
+ constraint pessoa_cidade_fk foreign key (cod_cidade) references cidade(cod_cidade));
+
+insert into pessoa (cod_pessoa, nome_pessoa, cpf, endereco, cod_cidade, dt_nasc, fone, email )
+    values(1, 'Diele', 123456789, 'rua seis', 1, to_date('15/01/2023','dd/mm/rrrr'), null, null );
+insert into pessoa (cod_pessoa, nome_pessoa, cpf, endereco, cod_cidade, dt_nasc, fone, email )
+    values(2, 'barbara', 123456710, 'rua sete', 2, to_date('16/01/2023','dd/mm/rrrr'), null, null );
+insert into pessoa (cod_pessoa, nome_pessoa, cpf, endereco, cod_cidade, dt_nasc, fone, email )
+    values(3, 'di', 123456711, 'rua 8', 2, to_date('16/08/2023','dd/mm/rrrr'), null, null );
+insert into pessoa (cod_pessoa, nome_pessoa, cpf, endereco, cod_cidade, dt_nasc, fone, email )
+    values(4, 'camila', 123456712, 'rua 9', 1, to_date('29/01/2023','dd/mm/rrrr'), null, null );
+
+--------------------------------------- 
+ create table compra
+ (cod_compra number(7),
+  observacao varchar2(100),
+  cnpj  number(20),
+  vlr_compra number(12,2),
+  data_compra date,
+  cpf varchar2(14),
+  qtd_produto number(12,2),
+  cod_pessoa number(7),
+  cod_cidade number(7),
+  constraint compra_pk primary key (cod_compra),
+ constraint compra_cidade_fk foreign key (cod_cidade) references cidade(cod_cidade),
+ constraint compra_pessoa_fk foreign key (cod_pessoa) references pessoa(cod_pessoa)
+ );
+
+ insert into compra (cod_compra, observacao, cnpj,vlr_compra, data_compra,cpf, qtd_produto,cod_pessoa, cod_cidade)
+     values (1,'feijão', 56489712, 12.1, to_date('11/09/2023','dd/mm/rrrr'),123456789,1,1,1);
+ insert into compra (cod_compra, observacao, cnpj,vlr_compra, data_compra,cpf, qtd_produto,cod_pessoa, cod_cidade)
+     values (2,'arroz', 56489713, 13.1, to_date('12/09/2023','dd/mm/rrrr'),123456710,2,2,2);
+ insert into compra (cod_compra, observacao, cnpj,vlr_compra, data_compra,cpf, qtd_produto,cod_pessoa, cod_cidade)
+     values (3,'milho', 56489714, 14.1, to_date('13/09/2023','dd/mm/rrrr'),123456711,3,3,3);
+ insert into compra (cod_compra, observacao, cnpj,vlr_compra, data_compra,cpf, qtd_produto,cod_pessoa, cod_cidade)
+     values (4,'alho', 56489715, 15.1, to_date('14/09/2023','dd/mm/rrrr'),123456712,4,4,4);
+--------------------------------------- 
+ create table produto
+ (cod_produto number(7),
+  descricao varchar2(100),
+   constraint produto_pk primary key (cod_produto));
+
+insert into produto (cod_produto, descricao) values (1,'aaaa');
+insert into produto (cod_produto, descricao) values (2,'bala');
+insert into produto (cod_produto, descricao) values (3,'milho');
+---------------------------------------   
+ create table compraproduto
+ (seq_compraproduto number(7),
+  cod_produto number(7),
+  cod_compra  number(7),
+  qtd         number(12,4),
+  vlr_unitario number(12,2),
+  constraint compraproduto_pk primary key (seq_compraproduto),
+ constraint compraproduto_produto_fk foreign key (cod_produto)
+ references produto(cod_produto),
+ constraint compraproduto_compra_fk foreign key (cod_compra)
+ references compra(cod_compra));
+
+insert into compraproduto(seq_compraproduto, cod_produto, cod_compra, qtd, vlr_unitario )
+	values (12, 1, 1,3,13.90 );
+insert into compraproduto(seq_compraproduto, cod_produto, cod_compra, qtd, vlr_unitario )
+	values (123, 1, 2,6,13.90 );
+insert into compraproduto(seq_compraproduto, cod_produto, cod_compra, qtd, vlr_unitario )
+	values (124, 2, 3,6,13.90 );
+insert into compraproduto(seq_compraproduto, cod_produto, cod_compra, qtd, vlr_unitario )
+	values (125, 2, 2,5,11.90 );
+insert into compraproduto(seq_compraproduto, cod_produto, cod_compra, qtd, vlr_unitario )
+	values (126, 2, 3,5,11.90 );
+------------------------------------------------------------------------------
+create or replace function fnc_exerc5 (p_codProd in number) 
+return varchar is
+
+cursor c_conta is
+	select count(*) contador 
+	from compra, compraproduto 
+	where compra.cod_compra = compraproduto.cod_compra
+	and compraproduto.cod_produto = p_codProd;
+r_c c_conta%rowtype;
+begin
+	open c_conta;
+	fetch c_conta into r_c;
+		if c_conta%notfound then
+            return('nenhuma compra');
+        end if;
+	close c_conta;
+return('O produto foi vendido em '||r_c.contador||' compras');
+end;
+
+--quando eu for puxar no meu parâmetro o código do produto (exemplo: 1 ) 
+--ele vai retornar quantos produtos foram comprados de acordo com o código
+--da compra (exemplo: código produto 1 apareceu 3x na compra de código 3)
+
+select fnc_exerc5(1) from dual;
+
+------------------------------------------------------------------------------
+--6) Altere a questão 5, adicione como parâmetros a data da compra inicial e a data da 
+--compra final como parâmetros.
+create or replace function fnc_exerc6 (p_codProd in number, p_dtinicial in date, p_dtfinal in date ) 
+return varchar is
+
+cursor c_conta is
+	select count(*) contador 
+	from compra, compraproduto 
+	where compra.cod_compra = compraproduto.cod_compra
+	and compraproduto.cod_produto = p_codProd
+    and compra.data_compra between p_dtinicial and p_dtfinal;--entre p_dtinicial e p_dtfinal
+r_c c_conta%rowtype;
+begin
+	open c_conta;
+	fetch c_conta into r_c;
+		if c_conta%notfound then
+            return('nenhuma compra');
+        end if;
+	close c_conta;
+return('O produto foi vendido em '||r_c.contador||' compras');
+end;
+
+select fnc_exerc6(2,to_date('01/01/2022','dd/mm/rrrr'), to_date('01/01/2023','dd/mm/rrrr')) 
+    from dual;
+--selecionei a função(codigoproduto, datainicial, datafinal)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
