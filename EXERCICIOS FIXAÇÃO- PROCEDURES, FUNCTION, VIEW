@@ -103,6 +103,282 @@ insert into compraproduto(seq_compraproduto, cod_produto, cod_compra, qtd, vlr_u
 --11) Faça uma view que retorne a quantidade de compras efetuadas por cada cliente.
 -- 12) Faça uma view que mostre  o nome da cidade, o nome da pessoa, o valor da compra e a soma dos produtos (qtd * valor _unitário) da tabela compraproduto.
 
+--1) Crie uma função que retorne o nome da pessoa, passando como parâmetro código da pessoa.
+
+create or replace function fnc_exer1(p_nome in varchar) 
+    return varchar2 is
+    v_retorno varchar2(100);
+cursor c_x is 
+	select nome_pessoa
+	from pessoa
+	where pessoa.cod_pessoa = p_nome;
+begin
+	open c_x;
+	fetch c_x into v_retorno;
+		if c_x%notfound then 
+            return('não encontrou nenhum nome');
+        end if;
+		if c_x%found then 
+            return(v_retorno);
+        end if;
+	close c_x;
+end;
+
+select fnc_exer1(1) from dual;
+
+--2) Usando cursor, crie uma função que retorne a quantidade de compras e o valor total das compras de uma determinada pessoa. Passe como parametro o código da pessoa.
+
+
+create or replace function fnc_exerc2(p_codPesso in number) 
+return varchar is
+cursor c_f is
+	select nome_pessoa, count(1) contador
+	from compra, compraproduto, pessoa
+	where compra.cod_compra = compraproduto.cod_compra
+    and compra.cod_pessoa = p_codPesso
+	group by compra.cod_pessoa, pessoa.nome_pessoa;
+	r_f c_f%rowtype;
+
+cursor c_x is
+	select pessoa.nome_pessoa, Sum (vlr_compra) soma
+	from compra, pessoa
+	where compra.cod_pessoa = pessoa.cod_pessoa
+    and compra.cod_pessoa = p_codPesso
+	group by pessoa.nome_pessoa;
+	r_x c_x%rowtype;
+
+begin
+	open c_f;
+	fetch c_f into r_f;
+    	if c_f%notfound then 
+                return('não encontrou');
+            end if;	
+	close c_f;
+
+    open c_x;
+    	fetch c_x into r_x;
+        	if c_x%notfound then 
+                    return('não encontrou nenhum valor');
+                end if;
+    	close c_x;
+
+return(r_f.contador||' '||r_x.soma);
+
+end;
+	
+select fnc_exerc2(3) from dual;
+
+
+--3) Faça uma função que verifique se o  valor da compra (na tabela compra) é igual a soma dos produtos e suas quantidades (qtd * vlr_unitario).
+
+create or replace function fnc_exerc3(p_codCompra in number) 
+return varchar is
+cursor c_a is
+	select compra.vlr_compra, sum(compraproduto.qtd * compraproduto.vlr_unitario) soma
+	from compra, compraproduto
+    where compra.cod_compra = p_codCompra
+	and compra.cod_compra = compraproduto.cod_compra
+    group by compra.vlr_compra;	
+r_a c_a%rowtype;
+
+begin
+    open c_a;
+    fetch c_a into r_a;
+    	if c_a%notfound then 
+            return('sem compras');
+        end if;
+	close c_a;
+
+return('Valor total das compras:'||r_a.vlr_compra|| ' Valor da soma dos produtos'||r_a.soma);
+end;
+select  fnc_exerc3(2) from dual;
+
+
+--4) Faça uma função que retorne o nome da pessoa, o endereço  e a cidade da pessoa. Passar como parâmetro o código da pessoa.
+
+
+create or replace function fnc_dados(p_codPessoa in number)
+return varchar is 
+cursor c_dados is
+	select pessoa.nome_pessoa, pessoa.endereco, cidade.nome_cidade
+	from pessoa, cidade 
+	where pessoa.cod_cidade = cidade.cod_cidade
+	and pessoa.cod_pessoa = p_codPessoa;
+r_dados c_dados%rowtype;
+begin 
+	open c_dados;
+	fetch c_dados into r_dados;
+        if c_dados%notfound then 
+            return('sem dados');
+        end if;		
+	close c_dados;
+return('Nome: '||r_dados.nome_pessoa||' Endereço: '||r_dados.endereco||' Nome cidade: '||r_dados.nome_cidade);
+end;
+
+select fnc_dados(1) from dual;
+
+
+--5) Faça uma função que retorne a quantidade de compras em que um determinado produto foi vendido. Por exemplo, o produto arroz foi vendido em 346 compras.
+
+create or replace function fnc_exerc5 (p_codProd in number) 
+return varchar is
+
+cursor c_conta is
+	select count(*) contador 
+	from compra, compraproduto 
+	where compra.cod_compra = compraproduto.cod_compra
+	and compraproduto.cod_produto = p_codProd;
+r_c c_conta%rowtype;
+begin
+	open c_conta;
+	fetch c_conta into r_c;
+		if c_conta%notfound then
+            return('nenhuma compra');
+        end if;
+	close c_conta;
+return('O produto foi vendido em '||r_c.contador||' compras');
+end;
+
+--quando eu for puxar no meu parâmetro o código do produto (exemplo: 1 ) 
+--ele vai retornar quantos produtos foram comprados de acordo com o código
+--da compra (exemplo: código produto 1 apareceu 3x na compra de código 3)
+
+select fnc_exerc5(1) from dual;
+
+
+--6) Altere a questão 5, adicione como parâmetros a data da compra inicial e a data da compra final como parâmetros.
+
+--6) Altere a questão 5, adicione como parâmetros a data da compra inicial e a data da 
+--compra final como parâmetros.
+create or replace function fnc_exerc6 (p_codProd in number, p_dtinicial in date, p_dtfinal in date ) 
+return varchar is
+
+cursor c_conta is
+	select count(*) contador 
+	from compra, compraproduto 
+	where compra.cod_compra = compraproduto.cod_compra
+	and compraproduto.cod_produto = p_codProd
+    and compra.data_compra between p_dtinicial and p_dtfinal;--entre p_dtinicial e p_dtfinal
+r_c c_conta%rowtype;
+begin
+	open c_conta;
+	fetch c_conta into r_c;
+		if c_conta%notfound then
+            return('nenhuma compra');
+        end if;
+	close c_conta;
+return('O produto foi vendido em '||r_c.contador||' compras');
+end;
+
+select fnc_exerc6(2,to_date('01/01/2022','dd/mm/rrrr'), to_date('01/01/2023','dd/mm/rrrr')) 
+    from dual;
+--selecionei a função(codigoproduto, datainicial, datafinal)
+
+--7) Faça uma procedure que atualize o total da compra de acordo com a soma dos produtos cadastrados na tabela compraproduto.
+
+create or replace procedure prc_exerc7 (p_codCompra in number )
+is 
+cursor c_soma is 
+    select nvl(sum(compraproduto.qtd*compraproduto.vlr_unitario),0) soma --FUNÇÃO NVL***
+	from compraproduto
+	where compraproduto.cod_compra = p_codCompra;
+r_soma c_soma%rowtype;
+begin
+	open c_soma;
+	fetch c_soma into r_soma;
+	close c_soma;
+
+	if r_soma.soma = 0 then 
+        raise_application_error(-20200, 'Valor dos produtos zerados, verifique');
+	else 
+        update compra set vlr_compra = r_soma.soma
+        where compra.cod_compra = p_codCompra;
+	end if;
+end;
+--FUNÇÃO NVL: exemplo: NVL(expr1, expr2)
+-- Função NVL avalia a expressão expr1 e, se for nula, retorna expr2. 
+--Caso contrário, retorna expr1. Ambas as expressões expr1 e expr2 devem ter o
+--mesmo tipo de dados ou um tipo de dados compatível.
+
+exec prc_exerc7 (1);
+
+--8) Faça uma procedure que insira uma cidade na tabela cidade. A procedure deve usar uma sequence e os parâmetros devem ser nome da cidade, uf e país.
+--create sequence seq_cidade start with 10;
+
+
+create sequence seq_cidade start with 5; PRIMEIRO CRIOU A SEQUENCE
+----
+create or replace procedure prc_exerc8 (p_nome_cidade in varchar,p_uf in varchar, p_pais in varchar) is 
+    
+begin 
+insert into cidade (cod_cidade, nome_cidade,uf,pais)
+    values (seq_cidade.nextval, p_nome_cidade,p_uf,p_pais );
+end;
+exec prc_exerc8('Santa Maria', 'RS', 'Brasil');
+select * from cidade;
+
+
+--9) Faça uma procedure que delete um produto da tabela produto. A procedure, antes de deletar, deve verificar se não há uma compra utilizando o código do produto. Se  houver, a procedure deve emitir um aviso de que o produto não pode ser deletado. Aqui a procedure está se antecipando a consistência da FK.
+
+create or replace procedure prc_exerc9 (p_codProduto in number) is
+cursor c_verifica is 
+	select count(1) conta
+	from compraproduto
+	where cod_produto = p_codProduto;
+r_verifica c_verifica%rowtype;
+
+begin
+	open c_verifica;
+	fetch c_verifica into r_verifica;
+	close c_verifica;
+
+	if r_verifica.conta > 0 then 
+ 	raise_application_error(-20200,
+        'Este item não pode ser apagado pois há compra feita neste produto');
+	else
+        delete produto
+        where cod_produto = p_codProduto;
+    end if;
+end;
+
+exec prc_exerc9(2);
+
+--10) Faça uma view que retorne a quantidade de pessoas cadastradas por cidade.
+
+create or replace View v_exer10 as
+	select cidade.nome_cidade, count(*) conta
+	from cidade, pessoa
+    where cidade.cod_cidade = pessoa.cod_cidade
+	group by cidade.nome_cidade;
+
+
+select * from v_exer10;
+
+
+--11) Faça uma view que retorne a quantidade de compras efetuadas por cada cliente.
+
+
+create or replace View v_exerc11 as 
+	select pessoa.nome_pessoa, count(*) conta
+	from compra, pessoa
+	where compra.cod_pessoa = pessoa.cod_pessoa
+	group by pessoa.nome_pessoa;
+select * from v_exerc11;
+
+-- 12) Faça uma view que mostre  o nome da cidade, o nome da pessoa, o valor da compra e a soma dos produtos (qtd * valor _unitário) da tabela compraproduto.
+
+create or replace View v_exerc12 as
+	select cidade.nome_cidade, pessoa.nome_pessoa, compra.vlr_compra, 
+    Sum(compraproduto.qtd * compraproduto.vlr_unitario ) somaProdutos
+	from cidade, pessoa, compraproduto, compra
+	where cidade.cod_cidade = pessoa.cod_cidade
+	and compra.cod_pessoa = pessoa.cod_pessoa
+	and compra.cod_compra = compraproduto.cod_compra
+    group by cidade.nome_cidade, pessoa.nome_pessoa, compra.vlr_compra ;
+
+select * from v_exerc12;
+
+
 
 
 
